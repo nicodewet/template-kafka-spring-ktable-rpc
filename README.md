@@ -1,7 +1,6 @@
 # template-kafka-spring-ktable-rpc
 
-We want to have an app that has a KTable based RESTful API that is served by a terminal KTable (RocksDB). In production a log compacted topic will serve the 
-KTable (for recovery) which will itself be run from an in-memory filesystem (since
+We want to have an app that has a KTable based RESTful API that is served by a terminal KTable (RocksDB). In production a log compacted topic will serve the KTable (for recovery) which will itself be run from an in-memory filesystem (since
 we can recover using Kafka).
 
 The plan:
@@ -12,55 +11,22 @@ The plan:
 
 ## Part A - KStream to KTable Pipe Example
 
-Create the log compacted topic that backs the KTable. Send some data to the topic as key:value pairs.
+See the [streams.examples](/streams.examples) directory for this work - it represents out foundation without Spring.
 
-```bash
-kafka_2.12-2.3.1 nico$ bin/kafka-topics.sh --zookeeper localhost:2181 --create --topic my.compacted.topic --replication-factor 1 --partitions 1 --config min.insync.replicas=1 --config  cleanup.policy=compact --config segment.bytes=1048576
-kafka_2.12-2.3.1 nico$ bin/kafka-topics.sh --list --bootstrap-server localhost:9092
-kafka_2.12-2.3.1 nico$ bin/kafka-console-producer.sh --broker-list localhost:9092 --topic my.compacted.topic --property "parse.key=true" --property "key.separator=:"
->foo:bar
->foo:zoo
->pie:cake
->key2:value
-```
+At the end of this, you may be frustated since you'll know you are writing to the KTable, but its hard to verify and
+not that useful.
 
-Run the app, it will print out updates for given key.
+Ontop the next step!
 
-```bash
-mvn clean package
-mvn exec:java -Dexec.mainClass=myapps.Pipe
-```
+## Part B - Spring Boot RESTful Layer
 
-Below is how you'll check the topic, not compaction happens on a per segment basis, with a 1MB segment size it will be a while
-before compaction takes place.
+WIP.
 
-```bash
-kafka_2.12-2.3.1 nico$ bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --from-beginning --topic my.compacted.topic
-```
+## Part C - Deploy using Kubernetes
 
-All the state-stores are stored in the location specified in state.dir. If not specified, it is /tmp/kafka-streams/<app-id> directory.
-
-```bash
-$ ls /tmp/kafka-streams/streams-pipe/0_0/rocksdb/KSTREAM-REDUCE-STATE-STORE-0000000001/
-000006.log                      CURRENT                         LOG                             OPTIONS-000008
-000011.sst                      IDENTITY                        LOG.old.1572837629313147        OPTIONS-000010
-000012.sst                      LOCK                            MANIFEST-000005
-```
+WIP.
 
 ### References
 
-#### Tutorial: Write a Kafka Streams Application
-
-[Tutorial: Write a Kafka Streams Application](https://kafka.apache.org/23/documentation/streams/tutorial)
-
-##### How I Created From Scratch
-
-```bash
-mvn archetype:generate -DarchetypeGroupId=org.apache.kafka -DarchetypeArtifactId=streams-quickstart-java -DarchetypeVersion=2.3.1 -DgroupId=streams.examples -DartifactId=streams.examples -Dversion=0.0.1-SNAPSHOT -Dpackage=myapps
-```
-
-#### KStream to KTable
-
-[Apparently common requirement](https://stackoverflow.com/questions/42937057/kafka-streams-api-kstream-to-ktable).
-
-## Spring Boot RESTful Layer
+* [Spring for Apache Kafka Deep Dive Part 2](https://www.confluent.io/blog/spring-for-apache-kafka-deep-dive-part-2-apache-kafka-spring-cloud-stream)
+* [itzg/KafkaStreamsConfig.java](https://gist.github.com/itzg/e3ebfd7aec220bf0522e23a65b1296c8)
